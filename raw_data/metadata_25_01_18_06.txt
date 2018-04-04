@@ -1,0 +1,13 @@
+Mrkala dost i mimo, nevydržela to mezi jednotlivými stimuly.
+
+ 
+REF - 0
+GND - 1
+F1 -  1
+F2 -  1
+Fz -  1
+Cz -  1
+Pz -  1
+
+
+Vybraná instrukce -  Dveøe

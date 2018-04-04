@@ -1,0 +1,7 @@
+REF 1
+GND 1
+F1,F2 1
+Fz, Cz 0
+Pz 1
+                                    
+Bez obtíží, mìøení probíhalo hladce :)

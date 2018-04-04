@@ -1,0 +1,14 @@
+Mìl modrou èepici, ale i tak mu byla dost tìsná, hodnì velká hlava. Na èele mìl dost velkou tukovou bouli, proto byla reference umístìna o kus výš, než obvykle. 
+F1 a F2 se po dlouhém snažení vùbec nepovedlo snížit. Namìøená data zøejmì nebudou úplnì kvalitní.
+
+ 
+REF -  2
+GND -  2
+F1 -   21
+F2 -   22
+Fz -   2
+Cz -   1
+Pz -   1
+
+
+Vybraná instrukce - televize
