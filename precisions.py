@@ -20,14 +20,21 @@ def precision(mapResults,true_label):
     true_positive = mapResults.count(true_label)
     false_positive = true - true_positive
    
-    precision = true_positive / (true_positive + false_positive)
+    if((true_positive + false_positive) != 0):
+        precision = true_positive / (true_positive + false_positive)
+    else:
+        precision = 0
     precision_round = round((precision*100),2)
     print("Precision is: ",precision_round,"%")
 
 def recall(mapResults,true_label):
     true_positive = mapResults.count(true_label)
     false_negative = 15 - true_positive
-    recall = true_positive / (true_positive + false_negative)
+    if((true_positive + false_negative) != 0):
+        recall = true_positive / (true_positive + false_negative)
+    else:
+        recall = 0
+        
     recall_round = round((recall*100),2)
     print("Recall is: ",recall_round,"%")
     
