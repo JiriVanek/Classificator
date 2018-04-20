@@ -24,13 +24,16 @@ import neural_network as neural_network
 import print_results
 from numpy.random import seed
 from config import instruction_files_count
+from keras.models import load_model
+import warnings
 
 seed(1)
 
 
 #turn off log
 mne.set_log_level('ERROR')
-
+# import os
+# os.environ["TF_CPP_MIN_LOG_LEVEL"]="4"
 
 # Set path to raw data folder 
 DATA_FOLDER ='C:/Users/Anet/eclipse-workspace/Classification/raw_data/'
@@ -57,7 +60,11 @@ files_testing_map = load_file_names.load_testing_data_names()
 data_training_count = len(files_training_map)
 data_testing_count = len(files_testing_map)
 
-# Nacte data na trenovni
+##############################################
+#
+#            Loading data to train
+#
+##############################################
 raw = []
 for i in range(data_training_count):
     path = DATA_FOLDER + (files_training_map[i][0])
@@ -65,8 +72,11 @@ for i in range(data_training_count):
     raw[i].filter(config.low_filter_frequency,config.high_filter_frequency)
 #     print(raw[i]._events)
 
-# nacte data na testovani
-
+##############################################
+#
+#             Loading data to predict
+#
+##############################################
 raw_to_predict = []
 true_prediction = []
 for i in range(data_testing_count):
@@ -83,15 +93,17 @@ for i in range(data_testing_count):
 #
 ##############################################
     
-# Vztvori epochy pro testovani
+# Vytvori epochy pro testovani
 event_to_predict = []
 epochs_to_predict = []
 for i in range(data_testing_count):
+    
     event_to_predict.append(raw_to_predict[i]._events)
-    if(i<instruction_files_count):
-        epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=config.event_id_instruction, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
-    else:
-        epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=config.event_id_matrix, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
+    
+#     if(i < config.instruction_files_count):
+    epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=config.event_id_instruction, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
+#     else:
+#         epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=config.event_id_matrix, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
     
     
 
@@ -130,6 +142,7 @@ epochs_non_targets = []
 # Vytvori epochy, z vytvorenych Epoch potom vybere ty targetove a ulozi je do epochs_target
 for i in range(data_training_count):
     events_train.append(raw[i]._events)
+    
     if(i < config.instruction_files_count):
         epochs.append(mne.Epochs(raw[i],events_train[i], event_id=config.event_id_instruction, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
     else:
@@ -245,10 +258,18 @@ mix.mix_data(X, y)
 x_event_lda = []
 x_event_neural = []
 
-  
-
-neural_network.train(X, y)
-
+print()
+print("If you want to load model from file: 1")
+print("If you want to train new model     : 0")
+print()
+model_load = input("Load model? 1/0: ")
+if(model_load == '1'):
+    config.model = load_model('save_models/mymodel_1.h5') 
+else:
+    if(model_load == '0'):
+        neural_network.train(X, y)
+    else:
+        print("Invalid option")
 
 
 for i in range(data_testing_count):
@@ -268,9 +289,9 @@ for i in range(data_testing_count):
 
     print()
     print("Neural network: ")
-    
+     
     print_results.print_guess(x_event_neural[i], epochs_to_predict[i], true_prediction[i])
-    
+
 
 
 

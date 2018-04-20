@@ -4,7 +4,6 @@ Created on 23. 3. 2018
 @author: Anet
 '''
 
-from keras.models import Sequential
 from keras.layers import Dense, Dropout
 import numpy as np
 from keras.callbacks import EarlyStopping
@@ -85,6 +84,7 @@ def train(x,y):
     model_history = config.model.fit(x_train, y_train, epochs=300, batch_size=4,shuffle = True, callbacks=[earlyStopping], validation_data=(x_valid,y_valid))
     loss_and_metrics = config.model.evaluate(x_valid, y_valid, batch_size=4)
    
+    config.model.save('mymodel.h5')
     plot_training.display_history(model_history)
     print(loss_and_metrics)
   
