@@ -264,7 +264,7 @@ print("If you want to train new model     : 0")
 print()
 model_load = input("Load model? 1/0: ")
 if(model_load == '1'):
-    config.model = load_model('save_models/mymodel_1.h5') 
+    config.model = load_model('save_models/mymodel_5.h5') 
 else:
     if(model_load == '0'):
         neural_network.train(X, y)
