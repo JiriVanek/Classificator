@@ -14,8 +14,7 @@ def solve (x_train,y_train,x_test):
 
     clf = LinearDiscriminantAnalysis()
     clf.fit(x_train, y_train)
-    LinearDiscriminantAnalysis(n_components=None, priors=None, shrinkage=None,
-            solver='svd', store_covariance=False, tol=0.0001)
+    LinearDiscriminantAnalysis(solver='svd', store_covariance=False, tol=0.0001)
     
     
     x_event = []

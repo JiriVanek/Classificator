@@ -9,9 +9,14 @@ from keras.models import Sequential
 Config at main class
 
 '''
-# input data
+# input data to training
 instruction_files_count = 5
 matrix_files_count = 10
+
+# input data to predict
+instruction_files_to_pred = 5
+matrix_files_to_pred = 10
+
 
 
 
@@ -59,6 +64,11 @@ Print results
 
 labels = ['door','window','radio','lamp','phone','tv','food','toilet','helps']
 mark_length = 9
+
+labels_matrix = ['R1','R2','R3','C1','C2','C3']
+mark_length_matrix = 6
+
+
 
 model = Sequential()
 

@@ -25,11 +25,19 @@ def load_training_data_names():
 
     return training_files
 
-def load_testing_data_names():
+def load_predicting_data_names():
     testing_files = []
     s = open('subject_target_test',"r")
+    count = 0
     for line in s:
-        testing_files.append((line[:41],line[42:]))
+        if(count < config.instruction_files_to_pred):
+            testing_files.append((line[:41],line[42:]))
+            count += 1
+        else:
+            testing_files.append((line[:36],line[38:]))
+
+            
+        
 
     return testing_files
 
