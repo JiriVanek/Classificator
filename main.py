@@ -4,26 +4,44 @@ Created on Wed Feb 14 22:22:09 2018
 @author: Anet
 print(__doc__)
 """
-import mne
-import numpy as np
-from mne import io
-import platform; print(platform.platform())
 import sys; print("Python", sys.version)
 import numpy; print("NumPy", numpy.__version__)
 import scipy; print("SciPy", scipy.__version__)
 import sklearn; print("Scikit-Learn", sklearn.__version__)
-import feature as ft
-import lda as lda
-import epochs_methods as epoch_met
-import input_test_data as load_file_names
+import keras; print("Keras", keras.__version__)
+
+import mne; print("MNE", mne.__version__)
+import numpy as np
+from mne import io
+import platform; print(platform.platform())
+import logic.epochs_methods as epoch_met
+import i_o.input_test_data as load_file_names
+import predict.lda as lda
 from builtins import print
-import mix_data_x_y as mix
-import config
-import neural_network as neural_network
-import print_results
+import logic.mix_data_x_y as mix
+import predict.neural_network as neural_network
+from keras.models import Sequential
+from configuration import high_filter_frequency
+from configuration import low_filter_frequency  
+from configuration import instruction_files_to_pred, matrix_files_to_pred
+from configuration import event_id_instruction
+from configuration import event_id_matrix
+from configuration import epoch_tmax
+from configuration import epoch_tmin
+from configuration import baseline_max
+from configuration import baseline_min
+from configuration import instruction_files_count,colors,linestyles,linestyles_matrix,colors_matrix
+from configuration import increase
+from configuration import conditions,conditions_matrix
+from configuration import chan
+from configuration import first_item
+from configuration import second_item
+from configuration import false, true, saved_model_path
+from display import print_guess
+from logic import feature_vector
 from numpy.random import seed
 from keras.models import load_model
-
+from datashape.coretypes import null
 
 seed(1)
 
@@ -60,15 +78,14 @@ data_predicting_count = len(files_testing_map)
 
 ##############################################
 #
-#            Loading data to train
+#            Loading data to train_nn
 #
 ##############################################
 raw = []
 for i in range(data_training_count):
-    path = DATA_FOLDER + (files_training_map[i][0])
+    path = DATA_FOLDER + (files_training_map[i][first_item])
     raw.append(io.read_raw_brainvision(vhdr_fname=path, preload=True))
-    raw[i].filter(config.low_filter_frequency,config.high_filter_frequency)
-#     print(raw[i]._events)
+    raw[i].filter(low_filter_frequency,high_filter_frequency)
 
 ##############################################
 #
@@ -78,11 +95,11 @@ for i in range(data_training_count):
 raw_to_predict = []
 true_prediction = []
 for i in range(data_predicting_count):
-    path = DATA_FOLDER + (files_testing_map[i][0])
-    true_prediction.append(files_testing_map[i][1])
+    path = DATA_FOLDER + (files_testing_map[i][first_item])
+    true_prediction.append(files_testing_map[i][second_item])
     true_prediction[i] = true_prediction[i].strip()
     raw_to_predict.append(io.read_raw_brainvision(vhdr_fname=path, preload=True))
-    raw_to_predict[i].filter(config.low_filter_frequency,config.high_filter_frequency)
+    raw_to_predict[i].filter(low_filter_frequency,high_filter_frequency)
 
     
 ##############################################
@@ -97,20 +114,19 @@ epochs_to_predict = []
 for i in range(data_predicting_count):
     event_to_predict.append(raw_to_predict[i]._events)
  
-    if(i < config.instruction_files_to_pred):
+    if(i < instruction_files_to_pred):
 
-        epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=config.event_id_instruction, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
+        epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=event_id_instruction, tmin=epoch_tmin, tmax=epoch_tmax,baseline=(baseline_min, baseline_max), preload=True))
     else:
-        epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=config.event_id_matrix, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
+        epochs_to_predict.append(mne.Epochs(raw_to_predict[i],event_to_predict[i], event_id=event_id_matrix, tmin=epoch_tmin, tmax=epoch_tmax,baseline=(baseline_min, baseline_max), preload=True))
     
     
 
-# Plot raw data
-# raw[0].plot(block=True, lowpass=40, n_channels=5)
-
-# for i in range(data_count): 
-#    raw[i].plot(block=True, lowpass=40, n_channels=6)
-
+# Plot raw data bylo 40 a 6
+"""
+for i in range(instruction_files_count): 
+   raw[i].plot(lowpass=50, n_channels=5,title="Raw data", block=False)
+"""
 ##############################################
 #
 #             
@@ -122,11 +138,9 @@ for i in range(data_predicting_count):
 
 # Set color of events
 """
-
-
-for i in range(data_count):
-    mne.viz.plot_events(events[i],raw[i].info['sfreq'], raw[i].first_samp, color=config.color)
-    """
+for i in range(instruction_files_count):
+    mne.viz.plot_events(event_to_predict[i],raw_to_predict[i].info['sfreq'], raw_to_predict[i].first_samp, color=color)
+"""
 
 #extract epochs
 
@@ -142,21 +156,20 @@ epochs_non_targets = []
 for i in range(data_training_count):
     events_train.append(raw[i]._events)
     
-    if(i < config.instruction_files_count):
-        epochs.append(mne.Epochs(raw[i],events_train[i], event_id=config.event_id_instruction, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
+    if(i < instruction_files_count):
+        epochs.append(mne.Epochs(raw[i],events_train[i], event_id=event_id_instruction, tmin=epoch_tmin, tmax=epoch_tmax,baseline=(baseline_min, baseline_max), preload=True))
         instruction = 1
     else:
-        epochs.append(mne.Epochs(raw[i],events_train[i], event_id=config.event_id_matrix, tmin=config.epoch_tmin, tmax=config.epoch_tmax,baseline=(config.baseline_min, config.baseline_max), preload=True))
+        epochs.append(mne.Epochs(raw[i],events_train[i], event_id=event_id_matrix, tmin=epoch_tmin, tmax=epoch_tmax,baseline=(baseline_min, baseline_max), preload=True))
         instruction = 0
         
     epochs_targets.append(epoch_met.filter_epochs_target(epochs[i], events_train[i], files_training_map[i][1], instruction))  
     epochs_non_targets.append(epoch_met.filter_epochs_target(epochs[i], events_train[i], files_training_map[i][2], instruction))  
     
 
-
 """
-for i in range(data_count):
-    mne.viz.plot_epochs(epochs[i])
+for i in range(instruction_files_count):
+    mne.viz.plot_epochs(epochs_to_predict[i], title="Epoch to predict: ", n_epochs=8, block=False)
 """
 
 # epochs.plot(title="Events epochs", n_epochs=(len(epochs.events)),event_colors=color)
@@ -168,25 +181,34 @@ for i in range(data_count):
 
 evoked_dict = [[]]
 # jen pro instruction
-for i in range(config.instruction_files_count):
+for i in range(instruction_files_to_pred):
     evoked_dict.append('')
     evoked_dict[i] = dict()
-    for condition in config.conditions:
-        evoked_dict[i][condition] = epochs[i][condition].average()
+    for condition in conditions:
+        evoked_dict[i][condition] = epochs_to_predict[i][condition].average()
        
+evoked_dict_matrix = [[]]
+# jen pro instruction
+for i in range(matrix_files_to_pred):
+    evoked_dict_matrix.append('')
+    evoked_dict_matrix[i] = dict()
+    for condition in conditions_matrix:
+        evoked_dict_matrix[i][condition] = epochs_to_predict[instruction_files_to_pred+i][condition].average()
 
-# Plot chart 
+print("\n\n\n")
+print("Do you want to show epochs of individual incentives in figures?")
+show = input("Show figures? 1/0: ")
+if(show == '1'):
+# Plot instructions 
+    for i in range(instruction_files_to_pred):
+        mne.viz.plot_compare_evokeds(evoked_dict[i], title="ERP chart instructions", colors=colors, linestyles=linestyles, gfp=False)
+# Plot matrix
+    for i in range(matrix_files_to_pred):
+        mne.viz.plot_compare_evokeds(evoked_dict_matrix[i], title="ERP chart matrix", colors=colors_matrix, linestyles=linestyles_matrix, gfp=False)
+ 
 
-"""
-for i in range(data_count):
-    mne.viz.plot_compare_evokeds(evoked_dict[i], title="ERP chart", colors=config.colors, linestyles=config.linestyles, gfp=False)
-"""
+# Extrakce priznaku
 
-"""
-
-Extrakce priznaku
-
-"""
 labels = epochs[0].events[:, -1]
 
 #feature extraction
@@ -210,12 +232,12 @@ for i in range(len(target_nontarget_epochs)):
     #count of target epochs     
     for j in range(len(target_nontarget_epochs[i])):
     
-        pick_epochs = target_nontarget_epochs[i][j].pick_channels(config.chan)
-        x.append(ft.feature_vector(pick_epochs))
+        pick_epochs = target_nontarget_epochs[i][j].pick_channels(chan)
+        x.append(feature_vector(pick_epochs))
         if(i < epochs_targets.__len__()):
-            y.append(1)
+            y.append(true)
         else:
-            y.append(0)
+            y.append(false)
 
 
 # Prepare data to predict 
@@ -226,8 +248,8 @@ y = np.array(y)
 for i in range(data_predicting_count):
     x_pred.append([])
     for j in range(len(epochs_to_predict[i])):
-        pick_epoch_to_predict = epochs_to_predict[i][j].pick_channels(config.chan)
-        x_pred[i].append(ft.feature_vector(pick_epoch_to_predict))
+        pick_epoch_to_predict = epochs_to_predict[i][j].pick_channels(chan)
+        x_pred[i].append(feature_vector(pick_epoch_to_predict))
 
 
 
@@ -242,10 +264,10 @@ mix.mix_data(x, y)
 #
 ##############################################
 
-# plotting means of training data
-# plt.plot(np.mean(X[y==1], axis=0))
-# plt.plot(np.mean(X[y==0], axis=0))
-# plt.show()
+#plotting means of training data
+#plt.plot(np.mean(X[y==1], axis=0))
+#plt.plot(np.mean(X[y==0], axis=0))
+#plt.show()
 
 
 # plotting tests epochs
@@ -258,54 +280,58 @@ mix.mix_data(x, y)
 
 x_event_lda = []
 x_event_neural = []
-
-print()
+print("\n\n\n\n")
+print("You can choose between a new model training or choose already trained model. \nWhen choosing new model training there is a risk \nof bad treined model due random setting of parameters.")
 print("If you want to load model from file: 1")
-print("If you want to train new model     : 0")
+print("If you want to train_nn new model  : 0")
 print()
+
 model_load = input("Load model? 1/0: ")
 if(model_load == '1'):
-    config.model = load_model('save_models/mymodel_5.h5') 
+    model = load_model(saved_model_path) 
+       
 else:
     if(model_load == '0'):
-        neural_network.train(x, y)
+        model = Sequential()
+        model = neural_network.train_nn(x, y, model)
     else:
         print("Invalid option")
 
 
 for i in range(data_predicting_count):
-    x_event_lda.append(lda.solve(x,y,x_pred[i]))
-    x_event_neural.append(neural_network.solve(x_pred[i]))
+    x_event_lda.append(lda.solve_lda(x,y,x_pred[i]))
+    x_event_neural.append(neural_network.solve_nn(x_pred[i],model))
 
-
+print("\n\n")
+print("The test results are as follows: ")
 for i in range(data_predicting_count):
     print()
     print("##########################################")
     print()
   
-    
-    if(i < config.instruction_files_to_pred):
+  
+    if(i < instruction_files_to_pred):
         
-        print(i+1,".) Expected solve: ",true_prediction[i])
+        print(i+increase,".) Expected solve_lda: ",true_prediction[i])
         print()
         
         instruction = 1
         print("LDA: ")
-        print_results.print_guess(x_event_lda[i], epochs_to_predict[i], true_prediction[i],instruction)
+        print_guess(x_event_lda[i], epochs_to_predict[i], true_prediction[i],null,instruction)
         print("Neural network: ")
-        print_results.print_guess(x_event_neural[i], epochs_to_predict[i], true_prediction[i],instruction)
+        print_guess(x_event_neural[i], epochs_to_predict[i], true_prediction[i],null,instruction)
         
     else:
-        if(i%2==1):
-            print(i+1,".) Expected solve: ",true_prediction[i],true_prediction[i+1])
+        if(i%2==0):
+            print(i+increase,".) Expected solve_lda: ",true_prediction[i],true_prediction[i+increase])
             
             print()
         
             instruction = 0
             print("LDA: ")
-            print_results.print_guess(x_event_lda[i], epochs_to_predict[i], true_prediction[i],instruction)
+            print_guess(x_event_lda[i], epochs_to_predict[i], true_prediction[i],true_prediction[i+increase],instruction)
             print("Neural network: ")
-            print_results.print_guess(x_event_neural[i], epochs_to_predict[i], true_prediction[i],instruction)
+            print_guess(x_event_neural[i], epochs_to_predict[i], true_prediction[i],true_prediction[i+increase],instruction)
         
     print()
 
